@@ -1,13 +1,12 @@
 const mongoose = require("mongoose");
 
 
-const cartSchema = new mongoose.Schema({
-   id: { type: mongoose.Schema.ObjectId, ref:"product" },
-   quantity:{type:Number, default: 1}
-})
+// const cartSchema = new mongoose.Schema({
+//    prodid: { type: mongoose.Schema.ObjectId, ref:"product" },
+//    quantity:{type:Number, default: 1}
+// })
 
 const userSchema = new mongoose.Schema({
-    id:Number,
   name: String,
   email: String,
   uname: String,
@@ -15,7 +14,8 @@ const userSchema = new mongoose.Schema({
   pass2: String,
   type: String,
   date: Date,
-  cart: [cartSchema],
+  cart: [{prodid: { type: mongoose.Schema.ObjectId, ref:"product" },
+    quantity:{type:Number, default: 1}}],
   order: Object,
 });
 
