@@ -1,7 +1,10 @@
+require("dotenv");
 const { default: mongoose } = require("mongoose");
 const userModel = require("../models/UserModel");
 const productModel = require("../models/products");
-const { use } = require("../routes/UserRoutes");
+const jwt = require("jsonwebtoken");
+const { use } = require("../app");
+const SECRET_KEY = process.env.SECRET_KEY;
 
 const userRegistration = async (req, res) => {
   console.log(req.body);
@@ -29,9 +32,15 @@ const userLogin = async (req, res) => {
       .send({ status: "failure", message: "user name or password not match" });
   }
 
-  res
-    .status(200)
-    .send({ status: "success", message: `Welcome To ${user.uname}` });
+  const token = jwt.sign({ username: user.uname }, SECRET_KEY, {
+    expiresIn: 8400,
+  });
+  res.status(200).send({
+    status: "success",
+    message: `Welcome To ${user.uname}`,
+    data: token,
+    lname,
+  });
 };
 
 const getAllProducts = async (req, res) => {
@@ -40,10 +49,31 @@ const getAllProducts = async (req, res) => {
   res.status(200).send(data);
 };
 
+const getProductByCategory = async (req, res) => {
+  const { type } = req.body;
+
+  const products = await productModel.find();
+  const category = products.filter((item) => item.type === type);
+
+  if (!category) {
+    return res
+      .status(400)
+      .send({ status: "failure", message: "Not Found The Category" });
+  }
+
+  res.status(200).send(category);
+};
+
 const getProductById = async (req, res) => {
   const id = req.params.id;
 
-  const data = await userModel.findById(id);
+  const data = await productModel.findById(id);
+
+  if (!data) {
+    return res
+      .status(400)
+      .send({ status: "failure", message: "Products Not Found" });
+  }
 
   res.status(200).send(data);
 };
@@ -84,6 +114,28 @@ const addToCart = async (req, res) => {
   });
 };
 
+const viewCart = async (req, res) => {
+  const userID = req.params.id;
+  const user = await userModel.findById(userID);
+  const cartItem = user.cart;
+
+  const cart = cartItem.find((item) => item._id);
+
+  if (!cartItem) {
+    return res
+      .status(400)
+      .send({ status: "failure", message: "Products Not added To cart" });
+  }
+  const products = await productModel.findById(cart.prodid);
+
+  const quantity = cart.quantity;
+
+  const { image, imageCategory, price, offerPrice } = products;
+  const data = { image, imageCategory, price, offerPrice, quantity };
+
+  res.status(200).send(data);
+};
+
 const addCartQuantity = async (req, res) => {
   const userID = req.params.id;
   const { prodid, quantityChange } = req.body;
@@ -102,9 +154,6 @@ const addCartQuantity = async (req, res) => {
       .send({ status: "failure", message: "Cart items not found" });
   }
 
-  console.log("hh", cartItem);
-  console.log(cartItem.quantity);
-
   cartItem.quantity += quantityChange;
 
   if (cartItem.quantity > 0) {
@@ -116,11 +165,37 @@ const addCartQuantity = async (req, res) => {
     .send({ status: "success", message: "cartItem Updated", data: user.cart });
 };
 
+const removeProduct = async (req, res) => {
+  const userID = req.params.id;
+  const itemId = req.params.itemId;
+
+  if (!itemId) {
+    return res.status(400).send({ message: "Products Not Found" });
+  }
+
+  const user = await userModel.findById(userID);
+  if (!user) {
+    return res.status(404).send({ message: "User Not Found" });
+  }
+
+  const result = await userModel.updateOne(
+    { _id: userID },
+    { $pull: { cart: { prodid: itemId } } }
+  );
+
+  if (result.modifiedCount > 0) {
+    res.status(200).send({ status: "sucess", message: "cart product removed" });
+  }
+};
+
 module.exports = {
   userRegistration,
   userLogin,
   getAllProducts,
+  getProductByCategory,
   getProductById,
   addToCart,
+  viewCart,
   addCartQuantity,
+  removeProduct,
 };
