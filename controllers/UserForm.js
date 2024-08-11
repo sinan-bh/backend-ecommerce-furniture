@@ -1,6 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const userModel = require("../models/UserModel");
 const productModel = require("../models/products");
+const { use } = require("../routes/UserRoutes");
 
 const userRegistration = async (req, res) => {
   console.log(req.body);
@@ -17,13 +18,29 @@ const userRegistration = async (req, res) => {
   }
 };
 
-const getAllUser = async (req, res) => {
-  const data = await userModel.find();
+const userLogin = async (req, res) => {
+  const { lname, lpass } = req.body;
+
+  const user = await userModel.findOne({ uname: lname });
+
+  if (lname !== user.uname && lpass !== user.pass1) {
+    return res
+      .status(400)
+      .send({ status: "failure", message: "user name or password not match" });
+  }
+
+  res
+    .status(200)
+    .send({ status: "success", message: `Welcome To ${user.uname}` });
+};
+
+const getAllProducts = async (req, res) => {
+  const data = await productModel.find();
 
   res.status(200).send(data);
 };
 
-const getUser = async (req, res) => {
+const getProductById = async (req, res) => {
   const id = req.params.id;
 
   const data = await userModel.findById(id);
@@ -100,9 +117,10 @@ const addCartQuantity = async (req, res) => {
 };
 
 module.exports = {
-  getAllUser,
-  getUser,
   userRegistration,
+  userLogin,
+  getAllProducts,
+  getProductById,
   addToCart,
   addCartQuantity,
 };
