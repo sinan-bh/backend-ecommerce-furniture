@@ -1,26 +1,24 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
+const isUserLogin = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
 
+  if (!authHeader) {
+    res.status(401).send({ stauts: "failure", message: "no token provaided" });
+  }
 
-const isUserLogin = (req,res,next) => {
-    const authHeader = req.headers["authorization"]
+  let token = authHeader.split(" ")[1];
 
-    if (!authHeader) {
-        res.status(401).send({stauts: "failure", message: "no token provaided"})
+  jwt.verify(token, process.env.SECRET_KEY, (err, decode) => {
+    if (err) {
+      return res
+        .status(500)
+        .send({ status: "failure", message: "Authintication Faild" });
     }
 
-    let token = authHeader.split(" ")[1];
+    req.uname = decode.uname;
+    next();
+  });
+};
 
-    jwt.verify(token,process.env.SECRET_KEY,(err,decode)=>{
-        if(err){
-           return res.status(500).send({status: 'failure', message: "Authintication Faild"})
-        }
-
-        req.uname = decode.uname
-        next()
-    })
-
-
-}
-
-module.exports = isUserLogin
+module.exports = isUserLogin;
