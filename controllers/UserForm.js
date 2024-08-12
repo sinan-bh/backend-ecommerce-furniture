@@ -142,9 +142,7 @@ const addToCart = async (req, res) => {
 
 const viewCart = async (req, res) => {
   const userID = req.params.id;
-  const user = await userModel.findById(userID);
-  const cartItem = user.cart;
-  const cart = cartItem.find((item) => item._id);
+  const cartItem = await userModel.findById(userID).populate({ path: 'cart.prodid'});
 
   if (!cartItem) {
     return res
@@ -152,12 +150,7 @@ const viewCart = async (req, res) => {
       .send({ status: "failure", message: "Products Not added To cart" });
   }
 
-  const products = await productModel.findById(cart.prodid);
-  const quantity = cart.quantity;
-  const { image, imageCategory, price, offerPrice } = products;
-  const data = { image, imageCategory, price, offerPrice, quantity };
-
-  res.status(200).send(data);
+  res.status(200).send(cart);
 };
 
 const addCartQuantity = async (req, res) => {
@@ -212,14 +205,88 @@ const removeProduct = async (req, res) => {
   }
 };
 
+const addWishList = async (req, res) => {
+  const userID = req.params.id;
+
+  if (!userID) {
+    return res.status(400).send({ messge: "user not found" });
+  }
+
+  const productID = req.body.prodid;
+  const product = await userModel.findOne({ _id: userID, wishlist: productID });
+
+  console.log(product);
+  
+
+  if (product) {
+    return res.status(400).send({ message: "The Product All ready Exist" });
+  }
+
+  const whishList = await userModel.updateOne(
+    { _id: userID },
+    { $push: { wishlist: productID } }
+  );
+
+  
+  res
+    .status(200)
+    .send({
+      type: "success",
+      message: "add wishlist to product",
+      data: whishList,
+    });
+};
+
+const showWishList = async (req,res) => {
+  const userID = req.params.id
+
+  if (!userID) {
+    return res.status(400).send({message: "User Not Found"})
+  }
+
+  const whishList = await userModel.findById(userID).populate('wishlist')
+  
+  if (!whishList) {
+    return res.status(400).send({message: "WhisList is Empty"})
+  }
+  
+  res.status(200).send({status: "success", data: whishList})  
+}
+
+const removeFromWishList = async (req,res) => {
+  const userID = req.params.id
+  const itemID = req.params.itemId
+
+  console.log("userID",userID);
+  console.log("ItemID",itemID);
+
+  
+  if (!userID && !itemID) {
+    return res.status(400).send({message: "user or product not found"})
+  }
+
+  const removeProduct = await userModel.updateOne({_id: userID},{$pull: {wishlist: itemID}})
+
+  console.log(removeProduct);
+
+
+  res.status(200).send({status: "success", message: "remove the product in wishList", data:removeProduct})
+}
+
 module.exports = {
   userRegistration,
   userLogin,
+
   getAllProducts,
   getProductByCategory,
   getProductById,
+
   addToCart,
   viewCart,
   addCartQuantity,
   removeProduct,
+
+  addWishList,
+  showWishList,
+  removeFromWishList,
 };
