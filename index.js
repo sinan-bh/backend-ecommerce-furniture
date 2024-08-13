@@ -8,10 +8,7 @@ const url = process.env.MONGO_URI;
 
 function dbConnection() {
   mongoose
-    .connect(url, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
+    .connect(url)
     .then(() => console.log("DataBase Connected"));
 }
 
