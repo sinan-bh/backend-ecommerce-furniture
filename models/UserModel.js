@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: String,
   uname: String,
-  pass: String,
+  password: String,
   type: { type: String, default: "user" },
   date: { type: String, default: new Date().toLocaleDateString() },
   cart: [
@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
       quantity: { type: Number, default: 1 },
     },
   ],
-  order: [{ type: mongoose.Schema.ObjectId, ref: "order" }],
+  orders: [{ type: mongoose.Schema.ObjectId, ref: "order" }],
   wishlist: [{ type: mongoose.Schema.ObjectId, ref: "product" }],
 });
 

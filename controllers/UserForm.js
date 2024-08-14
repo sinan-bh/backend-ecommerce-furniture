@@ -4,8 +4,19 @@ const userModel = require("../models/UserModel");
 const productModel = require("../models/products");
 const jwt = require("jsonwebtoken");
 const validationSchema = require("../models/validation");
+const bcrypt = require("bcrypt");
+const Razorpay = require("razorpay");
+const orderModel = require("../models/orderModel");
+
 
 const SECRET_KEY = process.env.SECRET_KEY;
+const RAZORPAY_KEY = process.env.razorpay_key_id
+const RAZORPAY_SECRET_KEY = process.env.razorpay_secert_key
+
+const razorpay = new Razorpay({
+  key_id: RAZORPAY_KEY,
+  key_secret: RAZORPAY_SECRET_KEY,
+});
 
 const userRegistration = async (req, res) => {
   const { error, value } = validationSchema.validate(req.body);
@@ -14,13 +25,18 @@ const userRegistration = async (req, res) => {
   if (error) {
     return res
       .status(400)
-      .send({ status: "failure", message: "invalid user datas" });
+      .send({
+        status: "failure",
+        message: "invalid user datas",
+        error: error.message,
+      });
   }
 
   console.log("registration", value);
 
   const { name, email, uname, pass } = value;
-  const newUser = new userModel({ name, email, uname, pass });
+  const password = await bcrypt.hash(pass, 10);
+  const newUser = new userModel({ name, email, uname, password });
   const user = await userModel.find();
   const username = user.find((item) => item.uname === uname);
 
@@ -45,15 +61,35 @@ const userLogin = async (req, res) => {
       .send({ status: "failure", message: "login details incorrect" });
   }
 
-  console.log(value);
+  console.log("login", value);
 
   const { uname, pass } = value;
   const user = await userModel.findOne({ uname: uname });
 
-  if (uname !== user.uname && pass !== user.pass) {
+  console.log("user",user);
+  
+
+  if (!user) {
     return res
       .status(400)
-      .send({ status: "failure", message: "user name or password not match" });
+      .send({ status: "failure", message: "user not found" });
+  }
+
+  if (!pass || !user.password) {
+    return res
+      .status(400)
+      .json({ status: "error", message: "Invalid password" });
+  }
+
+  const isPasswrodMatch = await bcrypt.compare(pass, user.password);
+
+  console.log("passss",isPasswrodMatch);
+  
+
+  if (!isPasswrodMatch) {
+    return res
+      .status(400)
+      .send({ message: "invalid password", isPasswrodMatch });
   }
 
   const token = jwt.sign({ username: user.uname }, SECRET_KEY, {
@@ -65,6 +101,7 @@ const userLogin = async (req, res) => {
     message: `Welcome To ${user.uname}`,
     data: token,
     uname,
+    isPasswrodMatch,
   });
 };
 
@@ -107,7 +144,7 @@ const getProductById = async (req, res) => {
 
 const addToCart = async (req, res) => {
   const userID = req.params.id;
-  const productID = req.body.prodid;
+  const productID = req.body.id;
   const user = await userModel.findById(userID);
 
   console.log("user", user);
@@ -142,7 +179,9 @@ const addToCart = async (req, res) => {
 
 const viewCart = async (req, res) => {
   const userID = req.params.id;
-  const cartItem = await userModel.findById(userID).populate({ path: 'cart.prodid'});
+  const cartItem = await userModel
+    .findById(userID)
+    .populate({ path: "cart.prodid" });
 
   if (!cartItem) {
     return res
@@ -216,7 +255,6 @@ const addWishList = async (req, res) => {
   const product = await userModel.findOne({ _id: userID, wishlist: productID });
 
   console.log(product);
-  
 
   if (product) {
     return res.status(400).send({ message: "The Product All ready Exist" });
@@ -227,50 +265,108 @@ const addWishList = async (req, res) => {
     { $push: { wishlist: productID } }
   );
 
-  
-  res
-    .status(200)
-    .send({
-      type: "success",
-      message: "add wishlist to product",
-      data: whishList,
-    });
+  res.status(200).send({
+    type: "success",
+    message: "add wishlist to product",
+    data: whishList,
+  });
 };
 
-const showWishList = async (req,res) => {
-  const userID = req.params.id
+const showWishList = async (req, res) => {
+  const userID = req.params.id;
 
   if (!userID) {
-    return res.status(400).send({message: "User Not Found"})
+    return res.status(400).send({ message: "User Not Found" });
   }
 
-  const whishList = await userModel.findById(userID).populate('wishlist')
-  
+  const whishList = await userModel.findById(userID).populate("wishlist");
+
   if (!whishList) {
-    return res.status(400).send({message: "WhisList is Empty"})
+    return res.status(400).send({ message: "WhisList is Empty" });
   }
-  
-  res.status(200).send({status: "success", data: whishList})  
-}
 
-const removeFromWishList = async (req,res) => {
-  const userID = req.params.id
-  const itemID = req.params.itemId
+  res.status(200).send({ status: "success", data: whishList });
+};
 
-  console.log("userID",userID);
-  console.log("ItemID",itemID);
+const removeFromWishList = async (req, res) => {
+  const userID = req.params.id;
+  const itemID = req.params.itemId;
 
-  
+  console.log("userID", userID);
+  console.log("ItemID", itemID);
+
   if (!userID && !itemID) {
-    return res.status(400).send({message: "user or product not found"})
+    return res.status(400).send({ message: "user or product not found" });
   }
 
-  const removeProduct = await userModel.updateOne({_id: userID},{$pull: {wishlist: itemID}})
+  const removeProduct = await userModel.updateOne(
+    { _id: userID },
+    { $pull: { wishlist: itemID } }
+  );
 
   console.log(removeProduct);
 
+  res
+    .status(200)
+    .send({
+      status: "success",
+      message: "remove the product in wishList",
+      data: removeProduct,
+    });
+};
 
-  res.status(200).send({status: "success", message: "remove the product in wishList", data:removeProduct})
+const payment = async (req,res) => {
+  const userID = req.params.id
+  const user = await userModel.findById(userID).populate({path:"cart.prodid"})
+  const {cart} = user
+  const quantity = cart.reduce((total,item)=> total + item.quantity,0)
+  const amount = cart.map(item=> item.prodid).reduce((total,data)=> (total + data.offerPrice)*quantity,0)
+
+  console.log(amount);
+  
+  const option = {
+    amount: amount*100,
+    currency: "INR",
+    receipt:  `receipt_${Math.floor(Math.random() * 10000)}`,
+  }   
+
+  const order = await razorpay.orders.create(option)
+
+  if (!order) {
+    return res.status(400).send({message: "some thing wrong"})
+  }
+
+  console.log(order);
+  const products = user.cart
+  const {id,created_at} = order
+  const order_id = id;
+  const total_ammount = amount
+  const payment_id = created_at
+  const orders = new orderModel({userID, products, order_id, payment_id, total_ammount})
+  const newOrder = new userModel({orders})
+  newOrder.save()
+
+  user.cart = []
+  
+  res.status(201).send({status: "success", message: "payment success", order: newOrder})
+}
+
+const orederProducts = async (req,res) => {
+  // const userID = req.params.id
+  // const order = req.session.order
+
+
+  // const user = await userModel.findById(userID) 
+
+  // if (!user) {
+  //   return res.status(400).send({message: "user not found"})
+  // }
+
+  // const products = user.cart
+  
+
+ 
+  // res.status(201).send({status:"success",data: });
 }
 
 module.exports = {
@@ -289,4 +385,7 @@ module.exports = {
   addWishList,
   showWishList,
   removeFromWishList,
+
+  payment,
+  orederProducts,
 };

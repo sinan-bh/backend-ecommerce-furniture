@@ -22,4 +22,7 @@ router.route("/wishlist/:id").post(tryCatchMiddleware(controller.addWishList))
 router.route("/wishlist/:id").get(tryCatchMiddleware(controller.showWishList))
 router.route("/wishlist/:id/:itemId").delete(tryCatchMiddleware(controller.removeFromWishList))
 
+router.route("/payment/:id").post(tryCatchMiddleware(controller.payment))
+router.route("/payment/:id").get(tryCatchMiddleware(controller.orederProducts))
+
 module.exports = router;
