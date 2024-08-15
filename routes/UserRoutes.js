@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express();
-const controller = require("../controllers/UserForm");
+const controller = require("../controllers/UserController");
 const isUserLogin = require("../middlewares/userAuthintication");
 const tryCatchMiddleware = require('../middlewares/tryCatchErrorHandler')
 
@@ -23,6 +23,7 @@ router.route("/wishlist/:id").get(tryCatchMiddleware(controller.showWishList))
 router.route("/wishlist/:id/:itemId").delete(tryCatchMiddleware(controller.removeFromWishList))
 
 router.route("/payment/:id").post(tryCatchMiddleware(controller.payment))
-router.route("/payment/:id").get(tryCatchMiddleware(controller.orederProducts))
+router.route("/verify_payment/:id/:orderid").post(tryCatchMiddleware(controller.verify_payment))
+router.route("/order/:id").get(tryCatchMiddleware(controller.orederProducts))
 
 module.exports = router;

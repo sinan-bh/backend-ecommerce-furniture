@@ -7,4 +7,14 @@ const userValidationSchema = Joi.object({
   pass: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")).required(),
 });
 
-module.exports = userValidationSchema;
+const productsValidationSchema = Joi.object({
+  title: Joi.string(),
+  description: Joi.string(),
+  price: Joi.number().positive(),
+  offerPrice: Joi.number().positive(),
+  category: Joi.string(),
+  details: Joi.string(),
+  type: Joi.string(),
+})
+
+module.exports = {userValidationSchema, productsValidationSchema};

@@ -3,15 +3,14 @@ const { default: mongoose } = require("mongoose");
 const userModel = require("../models/UserModel");
 const productModel = require("../models/products");
 const jwt = require("jsonwebtoken");
-const validationSchema = require("../models/validation");
+const { userValidationSchema } = require("../models/validation");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
 const orderModel = require("../models/orderModel");
 
-
 const SECRET_KEY = process.env.SECRET_KEY;
-const RAZORPAY_KEY = process.env.razorpay_key_id
-const RAZORPAY_SECRET_KEY = process.env.razorpay_secert_key
+const RAZORPAY_KEY = process.env.razorpay_key_id;
+const RAZORPAY_SECRET_KEY = process.env.razorpay_secert_key;
 
 const razorpay = new Razorpay({
   key_id: RAZORPAY_KEY,
@@ -19,17 +18,15 @@ const razorpay = new Razorpay({
 });
 
 const userRegistration = async (req, res) => {
-  const { error, value } = validationSchema.validate(req.body);
+  const { error, value } = userValidationSchema.validate(req.body);
   console.log("registrationError", error);
 
   if (error) {
-    return res
-      .status(400)
-      .send({
-        status: "failure",
-        message: "invalid user datas",
-        error: error.message,
-      });
+    return res.status(400).send({
+      status: "failure",
+      message: "invalid user datas",
+      error: error.message,
+    });
   }
 
   console.log("registration", value);
@@ -51,7 +48,7 @@ const userRegistration = async (req, res) => {
 };
 
 const userLogin = async (req, res) => {
-  const { error, value } = validationSchema.validate(req.body);
+  const { error, value } = userValidationSchema.validate(req.body);
 
   console.log(error);
 
@@ -66,8 +63,7 @@ const userLogin = async (req, res) => {
   const { uname, pass } = value;
   const user = await userModel.findOne({ uname: uname });
 
-  console.log("user",user);
-  
+  console.log("user", user);
 
   if (!user) {
     return res
@@ -83,8 +79,7 @@ const userLogin = async (req, res) => {
 
   const isPasswrodMatch = await bcrypt.compare(pass, user.password);
 
-  console.log("passss",isPasswrodMatch);
-  
+  console.log("passss", isPasswrodMatch);
 
   if (!isPasswrodMatch) {
     return res
@@ -93,7 +88,7 @@ const userLogin = async (req, res) => {
   }
 
   const token = jwt.sign({ username: user.uname }, SECRET_KEY, {
-    expiresIn: 8400,
+    expiresIn: 86400,
   });
 
   res.status(200).send({
@@ -189,19 +184,24 @@ const viewCart = async (req, res) => {
       .send({ status: "failure", message: "Products Not added To cart" });
   }
 
-  res.status(200).send(cart);
+  res.status(200).send(cartItem);
 };
 
 const addCartQuantity = async (req, res) => {
-  const userID = req.params.id;
-  const { prodid, quantityChange } = req.body;
-  const user = await userModel.findById(userID);
+  const userID = req.params.id;  
+  const { prodid, quantityChange } = req.body;  
+  const user = await userModel.findById(userID)
+  .populate({ path: "cart.prodid" });  
 
+  console.log(user);
+  
   if (!user) {
     res.status(400).send({ status: "failure", message: "user not found" });
   }
 
   const cartItem = user.cart.find((item) => item.prodid.toString() === prodid);
+  console.log("cart",cartItem);
+  
 
   if (!cartItem) {
     res
@@ -306,68 +306,91 @@ const removeFromWishList = async (req, res) => {
 
   console.log(removeProduct);
 
-  res
-    .status(200)
-    .send({
-      status: "success",
-      message: "remove the product in wishList",
-      data: removeProduct,
-    });
+  res.status(200).send({
+    status: "success",
+    message: "remove the product in wishList",
+    data: removeProduct,
+  });
 };
 
-const payment = async (req,res) => {
-  const userID = req.params.id
-  const user = await userModel.findById(userID).populate({path:"cart.prodid"})
-  const {cart} = user
-  const quantity = cart.reduce((total,item)=> total + item.quantity,0)
-  const amount = cart.map(item=> item.prodid).reduce((total,data)=> (total + data.offerPrice)*quantity,0)
+const payment = async (req, res) => {
+  const userID = req.params.id;
+  const user = await userModel
+    .findById(userID)
+    .populate({ path: "cart.prodid" });
+  const { cart } = user;
+  const quantity = cart.reduce((total, item) => total + item.quantity, 0);
+  const amount = cart
+    .map((item) => item.prodid)
+    .reduce((total, data) => (total + data.offerPrice) * quantity, 0);
 
   console.log(amount);
-  
-  const option = {
-    amount: amount*100,
-    currency: "INR",
-    receipt:  `receipt_${Math.floor(Math.random() * 10000)}`,
-  }   
 
-  const order = await razorpay.orders.create(option)
+  const option = {
+    amount: amount * 100,
+    currency: "INR",
+    receipt: `receipt_${Math.floor(Math.random() * 10000)}`,
+  };
+
+  const order = await razorpay.orders.create(option);
 
   if (!order) {
-    return res.status(400).send({message: "some thing wrong"})
+    return res.status(400).send({ message: "some thing wrong" });
   }
 
-  console.log(order);
-  const products = user.cart
-  const {id,created_at} = order
+  const products = user.cart;
+  const { id, created_at } = order;
   const order_id = id;
-  const total_ammount = amount
-  const payment_id = created_at
-  const orders = new orderModel({userID, products, order_id, payment_id, total_ammount})
-  const newOrder = new userModel({orders})
-  newOrder.save()
+  const total_ammount = amount;
+  const payment_id = created_at;
+  const newOrder = new orderModel({
+    userID,
+    products,
+    order_id,
+    payment_id,
+    total_ammount,
+  });
 
-  user.cart = []
+  newOrder.save();
+
+  res
+    .status(201)
+    .send({ status: "success", message: "payment success", order: newOrder });
+};
+
+const verify_payment = async (req, res) => {
+  const userID = req.params.id;
+  const order_id = req.params.orderid
+  console.log(order_id);
   
-  res.status(201).send({status: "success", message: "payment success", order: newOrder})
-}
+  const order = await orderModel.find();
 
-const orederProducts = async (req,res) => {
-  // const userID = req.params.id
-  // const order = req.session.order
+  if (order.length === 0) {
+    return res.status(400).send({ message: "order not found" });
+  }
 
+  await userModel.updateOne(
+    { _id: userID },
+    { $push: { order: order_id }, $set: { cart: [] } },
+    { new: true }
+  );
 
-  // const user = await userModel.findById(userID) 
+  res.status(201).send({
+    status: "success",
+    message: "payment success",
+    data: order,
+  });
+};
 
-  // if (!user) {
-  //   return res.status(400).send({message: "user not found"})
-  // }
+const orederProducts = async (req, res) => {
+  const userID = req.params.id;
+  const user = await userModel.findById(userID).populate({ path: "order" });
 
-  // const products = user.cart
-  
-
- 
-  // res.status(201).send({status:"success",data: });
-}
+  if (user.order.length === 0) {
+    return res.status(400).send({ message: "order not found" });
+  }
+  res.status(200).send({ status: "success", data: user.order });
+};
 
 module.exports = {
   userRegistration,
@@ -387,5 +410,6 @@ module.exports = {
   removeFromWishList,
 
   payment,
+  verify_payment,
   orederProducts,
 };

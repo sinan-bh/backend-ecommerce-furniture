@@ -4,7 +4,7 @@ const isUserLogin = (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
-    res.status(401).send({ stauts: "failure", message: "no token provaided" });
+    return res.status(401).send({ stauts: "failure", message: "no token provaided" });
   }
 
   let token = authHeader.split(" ")[1];
