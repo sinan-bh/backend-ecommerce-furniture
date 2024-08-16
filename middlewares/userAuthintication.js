@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 
 const isUserLogin = (req, res, next) => {
   const authHeader = req.headers["authorization"];
+  console.log(authHeader);
+  
 
   if (!authHeader) {
     return res.status(401).send({ stauts: "failure", message: "no token provaided" });

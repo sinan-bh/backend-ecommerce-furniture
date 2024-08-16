@@ -17,6 +17,7 @@ const razorpay = new Razorpay({
   key_secret: RAZORPAY_SECRET_KEY,
 });
 
+// registration
 const userRegistration = async (req, res) => {
   const { error, value } = userValidationSchema.validate(req.body);
   console.log("registrationError", error);
@@ -47,6 +48,7 @@ const userRegistration = async (req, res) => {
   res.status(201).send(newUser);
 };
 
+// login
 const userLogin = async (req, res) => {
   const { error, value } = userValidationSchema.validate(req.body);
 
@@ -91,39 +93,46 @@ const userLogin = async (req, res) => {
     expiresIn: 86400,
   });
 
+
   res.status(200).send({
     status: "success",
     message: `Welcome To ${user.uname}`,
-    data: token,
+    token: token,
     uname,
     isPasswrodMatch,
   });
 };
 
+// get products
 const getAllProducts = async (req, res) => {
-  const products = await productModel.find();
-
-  if (!products) {
-    return res.status(400).send({ message: "Products Not Found" });
-  }
-
-  res.status(200).send(data);
-};
-
-const getProductByCategory = async (req, res) => {
-  const { type } = req.body;
-  const products = await productModel.find();
-  const category = products.filter((item) => item.type === type);
+  const { category } = req.query;
 
   if (!category) {
-    return res
-      .status(400)
-      .send({ status: "failure", message: "Not Found The Category" });
+    
+    const products = await productModel.find();
+  
+    if (!products) {
+      return res.status(400).send({ message: "Products Not Found" });
+    }
+  
+    res.status(200).send(products);
+  }else{
+    const findCategory = await productModel.aggregate([
+      {$match: {category: category}}
+    ]);
+  
+    if (!findCategory || findCategory.length === 0) {
+      return res
+        .status(400)
+        .send({ status: "failure", message: "Not Found The Category" });
+    }
+  
+    res.status(200).send(findCategory);
   }
-
-  res.status(200).send(category);
 };
 
+
+// products by id
 const getProductById = async (req, res) => {
   const id = req.params.id;
   const data = await productModel.findById(id);
@@ -137,6 +146,7 @@ const getProductById = async (req, res) => {
   res.status(200).send(data);
 };
 
+// add to cart
 const addToCart = async (req, res) => {
   const userID = req.params.id;
   const productID = req.body.id;
@@ -172,6 +182,7 @@ const addToCart = async (req, res) => {
   });
 };
 
+// view cart
 const viewCart = async (req, res) => {
   const userID = req.params.id;
   const cartItem = await userModel
@@ -187,14 +198,12 @@ const viewCart = async (req, res) => {
   res.status(200).send(cartItem);
 };
 
+//  update quantity
 const addCartQuantity = async (req, res) => {
   const userID = req.params.id;  
-  const { prodid, quantityChange } = req.body;  
+  const { prodid, quantityChange } = req.body;    
   const user = await userModel.findById(userID)
-  .populate({ path: "cart.prodid" });  
-
-  console.log(user);
-  
+      
   if (!user) {
     res.status(400).send({ status: "failure", message: "user not found" });
   }
@@ -220,6 +229,7 @@ const addCartQuantity = async (req, res) => {
     .send({ status: "success", message: "cartItem Updated", data: user.cart });
 };
 
+// remove Products
 const removeProduct = async (req, res) => {
   const userID = req.params.id;
   const itemId = req.params.itemId;
@@ -244,6 +254,7 @@ const removeProduct = async (req, res) => {
   }
 };
 
+// add wish list
 const addWishList = async (req, res) => {
   const userID = req.params.id;
 
@@ -251,7 +262,7 @@ const addWishList = async (req, res) => {
     return res.status(400).send({ messge: "user not found" });
   }
 
-  const productID = req.body.prodid;
+  const productID = req.body.id;
   const product = await userModel.findOne({ _id: userID, wishlist: productID });
 
   console.log(product);
@@ -272,6 +283,7 @@ const addWishList = async (req, res) => {
   });
 };
 
+// view wishlist
 const showWishList = async (req, res) => {
   const userID = req.params.id;
 
@@ -288,6 +300,7 @@ const showWishList = async (req, res) => {
   res.status(200).send({ status: "success", data: whishList });
 };
 
+// remove wishlist
 const removeFromWishList = async (req, res) => {
   const userID = req.params.id;
   const itemID = req.params.itemId;
@@ -313,37 +326,56 @@ const removeFromWishList = async (req, res) => {
   });
 };
 
+// order product
 const payment = async (req, res) => {
   const userID = req.params.id;
   const user = await userModel
     .findById(userID)
     .populate({ path: "cart.prodid" });
+
   const { cart } = user;
   const quantity = cart.reduce((total, item) => total + item.quantity, 0);
   const amount = cart
     .map((item) => item.prodid)
-    .reduce((total, data) => (total + data.offerPrice) * quantity, 0);
-
-  console.log(amount);
+    .reduce((total, data) => (total + Math.round(data.offerPrice)) * quantity, 0);
 
   const option = {
     amount: amount * 100,
     currency: "INR",
     receipt: `receipt_${Math.floor(Math.random() * 10000)}`,
   };
-
+  
   const order = await razorpay.orders.create(option);
 
   if (!order) {
     return res.status(400).send({ message: "some thing wrong" });
-  }
+  }  
 
   const products = user.cart;
   const { id, created_at } = order;
   const order_id = id;
-  const total_ammount = amount;
-  const payment_id = created_at;
-  const newOrder = new orderModel({
+  const total_ammount = amount;  
+  const payment_id = created_at;  
+
+  req.session.paymentOrder = {
+    userID,
+    products,
+    order_id,
+    payment_id,
+    total_ammount,
+  }
+
+  res
+    .status(201)
+    .send({ status: "success", message: "payment success", order: req.session.paymentOrder });
+};
+
+// verify product
+const verify_payment = async (req, res) => {
+  const id = req.params.id;    
+  const {userID,products,order_id,payment_id,total_ammount} = req.session.paymentOrder
+
+    const newOrder = new orderModel({
     userID,
     products,
     order_id,
@@ -353,35 +385,30 @@ const payment = async (req, res) => {
 
   newOrder.save();
 
-  res
-    .status(201)
-    .send({ status: "success", message: "payment success", order: newOrder });
-};
 
-const verify_payment = async (req, res) => {
-  const userID = req.params.id;
-  const order_id = req.params.orderid
-  console.log(order_id);
+  const user = await userModel.findById(id)
+  user.order = user.cart
   
-  const order = await orderModel.find();
-
-  if (order.length === 0) {
-    return res.status(400).send({ message: "order not found" });
-  }
-
   await userModel.updateOne(
-    { _id: userID },
-    { $push: { order: order_id }, $set: { cart: [] } },
+    { _id: id },
+    {  $set: { cart: [] } },
     { new: true }
   );
+
 
   res.status(201).send({
     status: "success",
     message: "payment success",
-    data: order,
+    data: newOrder,
   });
 };
 
+// cancell order
+const cancellProduct = async (req,res) => {
+  res.status(200).send({status: "success", message: "order cancelled"})
+}
+
+// order produc details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
   const user = await userModel.findById(userID).populate({ path: "order" });
@@ -392,12 +419,12 @@ const orederProducts = async (req, res) => {
   res.status(200).send({ status: "success", data: user.order });
 };
 
+
 module.exports = {
   userRegistration,
   userLogin,
 
   getAllProducts,
-  getProductByCategory,
   getProductById,
 
   addToCart,
@@ -411,5 +438,6 @@ module.exports = {
 
   payment,
   verify_payment,
+  cancellProduct,
   orederProducts,
 };

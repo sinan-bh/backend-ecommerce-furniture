@@ -9,6 +9,7 @@ const userValidationSchema = Joi.object({
 
 const productsValidationSchema = Joi.object({
   title: Joi.string(),
+  image: Joi.string(),
   description: Joi.string(),
   price: Joi.number().positive(),
   offerPrice: Joi.number().positive(),

@@ -8,7 +8,6 @@ router.route("/registration").post(tryCatchMiddleware(controller.userRegistratio
 router.route("/login").post(tryCatchMiddleware(controller.userLogin));
 
 router.route("/products").get(tryCatchMiddleware(controller.getAllProducts));
-router.route("/products/category").get(tryCatchMiddleware(controller.getProductByCategory));
 router.route("/products/:id").get(tryCatchMiddleware(controller.getProductById));
 
 router.use(isUserLogin);
@@ -23,7 +22,10 @@ router.route("/wishlist/:id").get(tryCatchMiddleware(controller.showWishList))
 router.route("/wishlist/:id/:itemId").delete(tryCatchMiddleware(controller.removeFromWishList))
 
 router.route("/payment/:id").post(tryCatchMiddleware(controller.payment))
-router.route("/verify_payment/:id/:orderid").post(tryCatchMiddleware(controller.verify_payment))
+router.route("/verify_payment/:id").post(tryCatchMiddleware(controller.verify_payment))
+router.route("/cancell_payment/:id").post(tryCatchMiddleware(controller.cancellProduct))
 router.route("/order/:id").get(tryCatchMiddleware(controller.orederProducts))
+
+router.route("/logout").post(tryCatchMiddleware(controller.logout))
 
 module.exports = router;

@@ -3,7 +3,7 @@ const tryCatch =  (errorHandler) => {
         try {
             await errorHandler(req,res,next)
         } catch (error) {
-            res.status(500).send({status: "failure", message: "error", error: error.message})
+            res.status(500).send({status: "failure", message: "error", error_message: error.message})
         }
     }
 }

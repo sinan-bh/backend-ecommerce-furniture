@@ -1,6 +1,12 @@
 const JWT = require("jsonwebtoken");
 const isAdmin = async (req, res, next) => {
-  const authHeader = req.header["authorization"];
+
+  console.log(req.headers);
+  
+  const authHeader = req.headers["authorization"];
+
+  console.log(authHeader);
+  
 
   if (!authHeader) {
     return res
@@ -8,7 +14,7 @@ const isAdmin = async (req, res, next) => {
       .send({ stauts: "failure", message: "no token provaided" });
   }
 
-  const token = authHeader.split(" ");
+  const token = authHeader.split(" ")[1];
   JWT.verify(token, process.env.SECRET_KEY, (err, decode) => {
     if (err) {
       return res

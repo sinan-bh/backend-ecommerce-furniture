@@ -14,6 +14,7 @@ module.exports = {
     const { uname, password } = req.body;
 
     if (uname === ADMIN_KEY && password === ADMIN_SECRET_KEY) {
+
       const token = JWT.sign({ usename: uname }, SECRET_KEY, {
         expiresIn: 86400,
       });
@@ -57,35 +58,32 @@ module.exports = {
 
   //View All Products
   getAllProducts: async (req, res) => {
-    const products = await productsModel.find();
-
-    if (!products) {
-      return res.status(400).res.send({ message: "products not found" });
-    }
-
-    res
-      .status(200)
-      .send({ status: "success", message: "user found", data: products });
-  },
-
-  //View Products By Category
-  getProductsByCategory: async (req, res) => {
-    const type = req.body.type;
-    const products = await productsModel.find();
-    if (!products) {
-      return res.status(400).res.send({ message: "products not found" });
-    }
-
-    const category = products.filter((item) => item.type === type);
+    const { category } = req.query;
 
     if (!category) {
-      return res.status(400).res.send({ message: "products not found" });
+      
+      const products = await productsModel.find();
+    
+      if (!products) {
+        return res.status(400).send({ message: "Products Not Found" });
+      }
+    
+      res.status(200).send(products);
+    }else{
+      const findCategory = await productsModel.aggregate([
+        {$match: {category: category}}
+      ]);
+    
+      if (!findCategory || findCategory.length === 0) {
+        return res
+          .status(400)
+          .send({ status: "failure", message: "Not Found The Category" });
+      }
+    
+      res.status(200).send(findCategory);
     }
-
-    res
-      .status(200)
-      .send({ status: "success", message: "user found", data: category });
   },
+
 
   //View Product By Id
   getProductById: async (req, res) => {
@@ -105,13 +103,18 @@ module.exports = {
   createProducts: async (req, res) => {
     const { error, value } = productsValidationSchema.validate(req.body);
 
+    console.log('jjjj',value.title);
+    
+
     if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+      return res.status(400).json({status:"faild", error: error });
     }
 
-    const { title, description, price, offerPrice, category, details, type } =
+    const { image,title, description, price, offerPrice, category, details, type } =
       value;
+      
     const newProducts = await productsModel.create({
+      image,
       title,
       description,
       price,
@@ -137,11 +140,15 @@ module.exports = {
       return res.status(400).json({ error: error.message });
     }
 
-    const { title, description, price, offerPrice, category, details, type } =
+    const { image,title, description, price, offerPrice, category, details, type } =
       value;
+
+      console.log(image, title);
+      
     const updateProduct = await productsModel.findByIdAndUpdate(
       { _id: productID },
       {
+        image:image,
         title: title,
         description: description,
         price: price,
@@ -179,7 +186,7 @@ module.exports = {
 
     res
       .status(200)
-      .send({ status: "success", message: "user found", data: orders });
+      .send({ status: "success", message: "orders found", data: orders });
   },
 
   //Order Details By Id
@@ -216,7 +223,7 @@ module.exports = {
       .send({
         status: "success",
         message: "order details",
-        total_products: total_products,
+        total_purchase: total_products,
         revanue: total_ammount,
       });
   },
