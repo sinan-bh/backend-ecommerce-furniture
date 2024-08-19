@@ -101,10 +101,7 @@ module.exports = {
 
   // create products
   createProducts: async (req, res) => {
-    const { error, value } = productsValidationSchema.validate(req.body);
-
-    console.log('jjjj',value.title);
-    
+    const { error, value } = productsValidationSchema.validate(req.body);    
 
     if (error) {
       return res.status(400).json({status:"faild", error: error });
@@ -159,7 +156,7 @@ module.exports = {
       }
     );
 
-    res.status(200).send({ status: "success", data: updateProduct });
+    res.status(200).send({ status: "success", data: value });
   },
 
   // delete product

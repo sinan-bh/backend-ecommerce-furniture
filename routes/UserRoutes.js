@@ -10,7 +10,7 @@ router.route("/login").post(tryCatchMiddleware(controller.userLogin));
 router.route("/products").get(tryCatchMiddleware(controller.getAllProducts));
 router.route("/products/:id").get(tryCatchMiddleware(controller.getProductById));
 
-router.use(isUserLogin);
+// router.use(isUserLogin);
 
 router.route("/cart/:id").post(tryCatchMiddleware(controller.addToCart));
 router.route("/cart/:id").get(tryCatchMiddleware(controller.viewCart));

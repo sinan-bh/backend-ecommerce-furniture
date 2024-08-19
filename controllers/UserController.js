@@ -99,6 +99,7 @@ const userLogin = async (req, res) => {
     message: `Welcome To ${user.uname}`,
     token: token,
     uname,
+    user,
     isPasswrodMatch,
   });
 };
@@ -154,11 +155,8 @@ const addToCart = async (req, res) => {
 
   console.log("user", user);
 
-  if (
-    !mongoose.Types.ObjectId.isValid(userID) &&
-    !mongoose.Types.ObjectId.isValid(productID)
-  ) {
-    return res.status(400).send({ error: "Invalid User or Product" });
+  if (!user) {
+    return res.status(400).send({ error: "Invalid User" });
   }
 
   const isUserProduct = user.cart.find(
@@ -195,7 +193,7 @@ const viewCart = async (req, res) => {
       .send({ status: "failure", message: "Products Not added To cart" });
   }
 
-  res.status(200).send(cartItem);
+  res.status(200).send(cartItem.cart);
 };
 
 //  update quantity
@@ -207,9 +205,8 @@ const addCartQuantity = async (req, res) => {
   if (!user) {
     res.status(400).send({ status: "failure", message: "user not found" });
   }
-
+  
   const cartItem = user.cart.find((item) => item.prodid.toString() === prodid);
-  console.log("cart",cartItem);
   
 
   if (!cartItem) {
@@ -297,7 +294,7 @@ const showWishList = async (req, res) => {
     return res.status(400).send({ message: "WhisList is Empty" });
   }
 
-  res.status(200).send({ status: "success", data: whishList });
+  res.status(200).send({ status: "success", data: whishList.wishlist });
 };
 
 // remove wishlist
@@ -375,6 +372,10 @@ const verify_payment = async (req, res) => {
   const id = req.params.id;    
   const {userID,products,order_id,payment_id,total_ammount} = req.session.paymentOrder
 
+  if (id !== userID) {
+    return res.status(400).send({message: "user not same"})
+  }
+
     const newOrder = new orderModel({
     userID,
     products,
@@ -385,13 +386,9 @@ const verify_payment = async (req, res) => {
 
   newOrder.save();
 
-
-  const user = await userModel.findById(id)
-  user.order = user.cart
-  
   await userModel.updateOne(
     { _id: id },
-    {  $set: { cart: [] } },
+    {  $push: {order: newOrder}, $set: { cart: [] } },
     { new: true }
   );
 
@@ -411,12 +408,15 @@ const cancellProduct = async (req,res) => {
 // order produc details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
-  const user = await userModel.findById(userID).populate({ path: "order" });
+  const user = await userModel.findById(userID).populate('order');
 
-  if (user.order.length === 0) {
-    return res.status(400).send({ message: "order not found" });
-  }
-  res.status(200).send({ status: "success", data: user.order });
+  console.log(user);
+  
+
+  // if (user.order.length === 0) {
+  //   return res.status(400).send({ message: "order not found" });
+  // }
+  res.status(200).send({ status: "success", data: user });
 };
 
 
