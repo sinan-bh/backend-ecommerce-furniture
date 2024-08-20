@@ -174,9 +174,12 @@ const addToCart = async (req, res) => {
     { $addToSet: { cart: { prodid: productID } } }
   );
 
+  const cartLength = user.cart.length
+
   res.send({
     status: "Success",
     message: "Successfully Added Product to Cart",
+    cartLength: cartLength
   });
 };
 
@@ -223,7 +226,7 @@ const addCartQuantity = async (req, res) => {
 
   res
     .status(200)
-    .send({ status: "success", message: "cartItem Updated", data: user.cart });
+    .send({ status: "success", message: "cartItem Updated", data: cartItem.quantity });
 };
 
 // remove Products
