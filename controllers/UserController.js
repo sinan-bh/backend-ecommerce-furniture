@@ -7,6 +7,7 @@ const { userValidationSchema } = require("../models/validation");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
 const orderModel = require("../models/orderModel");
+const crypto = require('crypto')
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const RAZORPAY_KEY = process.env.razorpay_key_id;
@@ -203,7 +204,7 @@ const viewCart = async (req, res) => {
 const addCartQuantity = async (req, res) => {
   const userID = req.params.id;  
   const { prodid, quantityChange } = req.body;    
-  const user = await userModel.findById(userID)
+  const user = await userModel.findById(userID).populate({path:"cart"})
       
   if (!user) {
     res.status(400).send({ status: "failure", message: "user not found" });
@@ -226,7 +227,7 @@ const addCartQuantity = async (req, res) => {
 
   res
     .status(200)
-    .send({ status: "success", message: "cartItem Updated", data: cartItem.quantity });
+    .send({ status: "success", message: "cartItem Updated", data: user.cart });
 };
 
 // remove Products
@@ -347,6 +348,9 @@ const payment = async (req, res) => {
   
   const order = await razorpay.orders.create(option);
 
+  console.log(order);
+  
+  
   if (!order) {
     return res.status(400).send({ message: "some thing wrong" });
   }  
@@ -355,52 +359,55 @@ const payment = async (req, res) => {
   const { id, created_at } = order;
   const order_id = id;
   const total_ammount = amount;  
-  const payment_id = created_at;  
-
-  req.session.paymentOrder = {
-    userID,
-    products,
-    order_id,
-    payment_id,
-    total_ammount,
-  }
-
-  res
-    .status(201)
-    .send({ status: "success", message: "payment success", order: req.session.paymentOrder });
-};
-
-// verify product
-const verify_payment = async (req, res) => {
-  const id = req.params.id;    
-  const {userID,products,order_id,payment_id,total_ammount} = req.session.paymentOrder
-
-  if (id !== userID) {
-    return res.status(400).send({message: "user not same"})
-  }
 
     const newOrder = new orderModel({
     userID,
     products,
     order_id,
-    payment_id,
+    status: 'pending',
     total_ammount,
   });
 
   newOrder.save();
 
-  await userModel.updateOne(
-    { _id: id },
-    {  $push: {order: newOrder}, $set: { cart: [] } },
-    { new: true }
-  );
+  res.cookie('paymentOrder', { userID, products, order_id, total_ammount }, { maxAge: 900000, httpOnly: true });
 
+  console.log( req.cookies.paymentOrder);
+  
 
-  res.status(201).send({
-    status: "success",
-    message: "payment success",
-    data: newOrder,
-  });
+  res
+    .status(201)
+    .send({ status: "success", message: "payment success", order:  { userID, products, order_id, total_ammount }});
+};
+
+// verify product
+const verify_payment = async (req, res) => {
+  const id = req.params.id; 
+  const { order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const generatedSignature = crypto
+    .createHmac('sha256', RAZORPAY_SECRET_KEY)
+    .update(`${order_id}|${razorpay_payment_id}`)
+    .digest('hex');    
+
+  if (generatedSignature === razorpay_signature) {
+    console.log('hhhhhhhhhhhhhhhhhhhhhhhhhhh');
+    const order = await orderModel.findOne({order_id: order_id})
+
+    await orderModel.updateOne(
+      {order_id: order_id},{$set: {status: 'completed'}}
+    )
+    
+    await userModel.updateOne(
+      { _id: id },
+      {  $push: {order: order}, $set: { cart: [] }, },
+      { new: true }
+    );
+    
+    res.send('Payment verified successfully');
+  } else {
+    res.status(400).send('Payment verification failed');
+  }
+
 };
 
 // cancell order

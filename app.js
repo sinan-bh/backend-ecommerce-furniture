@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const cors = require("cors")
 const errHandler = require("./middlewares/errorHandling");
 const session = require("express-session")
+const cookie = require("cookie-parser")
 const UserRoutes = require("./routes/UserRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
@@ -13,6 +14,7 @@ app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(errHandler);
+app.use(cookie())
 app.use(session({
   secret: process.env.SECRET_KEY, 
   resave: false,
