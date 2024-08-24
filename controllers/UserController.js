@@ -7,7 +7,7 @@ const { userValidationSchema } = require("../models/validation");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
 const orderModel = require("../models/orderModel");
-const crypto = require('crypto')
+const crypto = require("crypto");
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const RAZORPAY_KEY = process.env.razorpay_key_id;
@@ -94,6 +94,12 @@ const userLogin = async (req, res) => {
     expiresIn: 86400,
   });
 
+  res.cookie('token', token, {
+    httpOnly: true, 
+    secure: true, 
+    sameSite: 'Strict', 
+    maxAge: 3600000, 
+  });
 
   res.status(200).send({
     status: "success",
@@ -110,29 +116,27 @@ const getAllProducts = async (req, res) => {
   const { category } = req.query;
 
   if (!category) {
-    
     const products = await productModel.find();
-  
+
     if (!products) {
       return res.status(400).send({ message: "Products Not Found" });
     }
-  
+
     res.status(200).send(products);
-  }else{
+  } else {
     const findCategory = await productModel.aggregate([
-      {$match: {category: category}}
+      { $match: { category: category } },
     ]);
-  
+
     if (!findCategory || findCategory.length === 0) {
       return res
         .status(400)
         .send({ status: "failure", message: "Not Found The Category" });
     }
-  
+
     res.status(200).send(findCategory);
   }
 };
-
 
 // products by id
 const getProductById = async (req, res) => {
@@ -175,12 +179,12 @@ const addToCart = async (req, res) => {
     { $addToSet: { cart: { prodid: productID } } }
   );
 
-  const cartLength = user.cart.length
+  const cartLength = user.cart.length;
 
   res.send({
     status: "Success",
     message: "Successfully Added Product to Cart",
-    cartLength: cartLength
+    cartLength: cartLength,
   });
 };
 
@@ -202,16 +206,15 @@ const viewCart = async (req, res) => {
 
 //  update quantity
 const addCartQuantity = async (req, res) => {
-  const userID = req.params.id;  
-  const { prodid, quantityChange } = req.body;    
-  const user = await userModel.findById(userID).populate({path:"cart"})
-      
+  const userID = req.params.id;
+  const { prodid, quantityChange } = req.body;
+  const user = await userModel.findById(userID).populate({ path: "cart" });
+
   if (!user) {
     res.status(400).send({ status: "failure", message: "user not found" });
   }
-  
+
   const cartItem = user.cart.find((item) => item.prodid.toString() === prodid);
-  
 
   if (!cartItem) {
     res
@@ -219,7 +222,7 @@ const addCartQuantity = async (req, res) => {
       .send({ status: "failure", message: "Cart items not found" });
   }
 
-  cartItem.quantity += quantityChange;
+   cartItem.quantity += quantityChange;
 
   if (cartItem.quantity > 0) {
     user.save();
@@ -330,105 +333,99 @@ const removeFromWishList = async (req, res) => {
 // order product
 const payment = async (req, res) => {
   const userID = req.params.id;
+  const totalPrice = req.body.amount;
   const user = await userModel
     .findById(userID)
     .populate({ path: "cart.prodid" });
 
-  const { cart } = user;
-  const quantity = cart.reduce((total, item) => total + item.quantity, 0);
-  const amount = cart
-    .map((item) => item.prodid)
-    .reduce((total, data) => (total + Math.round(data.offerPrice)) * quantity, 0);
+  const amount = totalPrice * 100;
 
   const option = {
-    amount: amount * 100,
+    amount: amount,
     currency: "INR",
     receipt: `receipt_${Math.floor(Math.random() * 10000)}`,
   };
-  
+
+  console.log(option);
+
   const order = await razorpay.orders.create(option);
 
   console.log(order);
-  
-  
+
   if (!order) {
     return res.status(400).send({ message: "some thing wrong" });
-  }  
+  }
 
   const products = user.cart;
-  const { id, created_at } = order;
+  const { id } = order;
   const order_id = id;
-  const total_ammount = amount;  
+  const total_ammount = amount;
 
-    const newOrder = new orderModel({
+  const newOrder = new orderModel({
     userID,
     products,
     order_id,
-    status: 'pending',
+    status: "pending",
     total_ammount,
   });
 
   newOrder.save();
 
-  res.cookie('paymentOrder', { userID, products, order_id, total_ammount }, { maxAge: 900000, httpOnly: true });
-
-  console.log( req.cookies.paymentOrder);
-  
-
   res
     .status(201)
-    .send({ status: "success", message: "payment success", order:  { userID, products, order_id, total_ammount }});
+    .send({
+      status: "success",
+      message: "payment success",
+      order: { userID, products, order_id, total_ammount },
+    });
 };
 
 // verify product
 const verify_payment = async (req, res) => {
-  const id = req.params.id; 
+  const id = req.params.id;
   const { order_id, razorpay_payment_id, razorpay_signature } = req.body;
   const generatedSignature = crypto
-    .createHmac('sha256', RAZORPAY_SECRET_KEY)
+    .createHmac("sha256", RAZORPAY_SECRET_KEY)
     .update(`${order_id}|${razorpay_payment_id}`)
-    .digest('hex');    
+    .digest("hex");
 
   if (generatedSignature === razorpay_signature) {
-    console.log('hhhhhhhhhhhhhhhhhhhhhhhhhhh');
-    const order = await orderModel.findOne({order_id: order_id})
+    const order = await orderModel.findOne({ order_id: order_id });
 
     await orderModel.updateOne(
-      {order_id: order_id},{$set: {status: 'completed'}}
-    )
-    
+      { order_id: order_id },
+      { $set: { status: "completed" } }
+    );
+
     await userModel.updateOne(
       { _id: id },
-      {  $push: {order: order}, $set: { cart: [] }, },
+      { $push: { order: order }, $set: { cart: [] } },
       { new: true }
     );
-    
-    res.send('Payment verified successfully');
-  } else {
-    res.status(400).send('Payment verification failed');
-  }
 
+    res.send("Payment verified successfully");
+  } else {
+    res.status(400).send("Payment verification failed");
+  }
 };
 
 // cancell order
-const cancellProduct = async (req,res) => {
-  res.status(200).send({status: "success", message: "order cancelled"})
-}
+const cancellProduct = async (req, res) => {
+  res.status(200).send({ status: "success", message: "order cancelled" });
+};
 
 // order produc details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
-  const user = await userModel.findById(userID).populate('order');
+  const user = await userModel.findById(userID).populate("order");
 
   console.log(user);
-  
 
-  // if (user.order.length === 0) {
-  //   return res.status(400).send({ message: "order not found" });
-  // }
-  res.status(200).send({ status: "success", data: user });
+  if (user.order.length === 0) {
+    return res.status(400).send({ message: "order not found" });
+  }
+  res.status(200).send({ status: "success", data: user.order });
 };
-
 
 module.exports = {
   userRegistration,

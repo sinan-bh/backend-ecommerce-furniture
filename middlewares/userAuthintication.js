@@ -1,22 +1,25 @@
 const jwt = require("jsonwebtoken");
 
 const isUserLogin = (req, res, next) => {
-  const authHeader = req.headers["authorization"];  
+  const token = req.cookies.token;  
 
-  if (!authHeader) {
-    return res.status(401).send({ stauts: "failure", message: "no token provaided" });
+  console.log(token);
+  
+
+  if (!token) {
+    return res.status(401).send({ status: "failure", message: "No token provided" });
   }
-
-  let token = authHeader.split(" ")[1];
 
   jwt.verify(token, process.env.SECRET_KEY, (err, decode) => {
     if (err) {
-      return res
-        .status(500)
-        .send({ status: "failure", message: "User Authintication Faild" });
+      if (err.name === 'TokenExpiredError') {
+        return res.status(401).send({ status: "failure", message: "Token expired" });
+      } else {
+        return res.status(401).send({ status: "failure", message: "User authentication failed" });
+      }
     }
 
-    req.uname = decode.uname;
+    req.uname = decode.uname;  
     next();
   });
 };
