@@ -419,7 +419,9 @@ const orederProducts = async (req, res) => {
   const userID = req.params.id;
   const user = await userModel.findById(userID).populate("order");
 
-  console.log(user);
+  // const filter = user.order.map(  item=>  item.products).map(async item=> await productModel.findById(item))
+
+  // console.log(filter);
 
   if (user.order.length === 0) {
     return res.status(400).send({ message: "order not found" });
