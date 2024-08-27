@@ -2,34 +2,10 @@ require("dotenv");
 const orderModel = require("../models/orderModel");
 const productsModel = require("../models/products");
 const UserModel = require("../models/UserModel");
-const JWT = require("jsonwebtoken");
 const { productsValidationSchema } = require("../models/validation");
-const SECRET_KEY = process.env.SECRET_KEY;
-const ADMIN_KEY = process.env.ADMIN_KEY;
-const ADMIN_SECRET_KEY = process.env.ADMIN_SECRET_KEY;
+
 
 module.exports = {
-  //Admin Login
-  adminLogin: async (req, res) => {
-    const { uname, password } = req.body;
-
-    if (uname === ADMIN_KEY && password === ADMIN_SECRET_KEY) {
-
-      const token = JWT.sign({ usename: uname }, SECRET_KEY, {
-        expiresIn: 86400,
-      });
-
-      return res.status(200).send({
-        status: "success",
-        message: "admin Logged",
-        token: token,
-        data: uname,
-      });
-    }
-
-    res.status(400).send({ status: "falied", message: "login failed" });
-  },
-
   // All users
   getAllUsers: async (req, res) => {
     const users = await UserModel.find();
@@ -101,6 +77,8 @@ module.exports = {
 
   // create products
   createProducts: async (req, res) => {
+    console.log(req.body);
+    
     const { error, value } = productsValidationSchema.validate(req.body);    
 
     if (error) {
@@ -175,7 +153,7 @@ module.exports = {
 
   //Order Details
   getAllOrders: async (req, res) => {
-    const orders = await orderModel.find().populate({ path: "products" });
+    const orders = await orderModel.find().populate("products" );
 
     if (!orders) {
       return res.status(400).res.send({ message: "orders not found" });
@@ -191,7 +169,7 @@ module.exports = {
     const orderID = req.params.id;
     const order = await orderModel
       .findById(orderID)
-      .populate({ path: "products" });
+      
 
     if (!order) {
       return res.status(400).res.send({ message: "orders not found" });

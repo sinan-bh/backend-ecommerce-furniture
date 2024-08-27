@@ -2,12 +2,12 @@ require("dotenv");
 const { default: mongoose } = require("mongoose");
 const userModel = require("../models/UserModel");
 const productModel = require("../models/products");
-const jwt = require("jsonwebtoken");
 const { userValidationSchema } = require("../models/validation");
 const bcrypt = require("bcrypt");
 const Razorpay = require("razorpay");
 const orderModel = require("../models/orderModel");
 const crypto = require("crypto");
+const popularProductsModel = require("../models/popularProductsModel");
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const RAZORPAY_KEY = process.env.razorpay_key_id;
@@ -49,68 +49,6 @@ const userRegistration = async (req, res) => {
   res.status(201).send(newUser);
 };
 
-// login
-const userLogin = async (req, res) => {
-  const { error, value } = userValidationSchema.validate(req.body);
-
-  console.log(error);
-
-  if (error) {
-    return res
-      .status(400)
-      .send({ status: "failure", message: "login details incorrect" });
-  }
-
-  console.log("login", value);
-
-  const { uname, pass } = value;
-  const user = await userModel.findOne({ uname: uname });
-
-  console.log("user", user);
-
-  if (!user) {
-    return res
-      .status(400)
-      .send({ status: "failure", message: "user not found" });
-  }
-
-  if (!pass || !user.password) {
-    return res
-      .status(400)
-      .json({ status: "error", message: "Invalid password" });
-  }
-
-  const isPasswrodMatch = await bcrypt.compare(pass, user.password);
-
-  console.log("passss", isPasswrodMatch);
-
-  if (!isPasswrodMatch) {
-    return res
-      .status(400)
-      .send({ message: "invalid password", isPasswrodMatch });
-  }
-
-  const token = jwt.sign({ username: user.uname }, SECRET_KEY, {
-    expiresIn: 86400,
-  });
-
-  res.cookie('token', token, {
-    httpOnly: true, 
-    secure: true, 
-    sameSite: 'Strict', 
-    maxAge: 3600000, 
-  });
-
-  res.status(200).send({
-    status: "success",
-    message: `Welcome To ${user.uname}`,
-    token: token,
-    uname,
-    user,
-    isPasswrodMatch,
-  });
-};
-
 // get products
 const getAllProducts = async (req, res) => {
   const { category } = req.query;
@@ -150,6 +88,35 @@ const getProductById = async (req, res) => {
   }
 
   res.status(200).send(data);
+};
+
+//popular products
+
+const popularProducts = async (req, res) => {
+  const popularProducts = await popularProductsModel.find();
+
+  if (!popularProducts) {
+    return res
+      .status(400)
+      .send({ status: "failure", message: "Products Not Found" });
+  }
+
+  res.status(200).send(popularProducts);
+};
+
+//popular products By Id
+
+const popularProductsById = async (req, res) => {
+  const productID = req.params.id;
+  const popularProducts = await popularProductsModel.findById(productID);
+
+  if (!popularProducts) {
+    return res
+      .status(400)
+      .send({ status: "failure", message: "Products Not Found" });
+  }
+
+  res.status(200).send(popularProducts);
 };
 
 // add to cart
@@ -222,7 +189,7 @@ const addCartQuantity = async (req, res) => {
       .send({ status: "failure", message: "Cart items not found" });
   }
 
-   cartItem.quantity += quantityChange;
+  cartItem.quantity += quantityChange;
 
   if (cartItem.quantity > 0) {
     user.save();
@@ -350,34 +317,40 @@ const payment = async (req, res) => {
 
   const order = await razorpay.orders.create(option);
 
-  console.log(order);
+  console.log("hhh", order);
 
   if (!order) {
     return res.status(400).send({ message: "some thing wrong" });
   }
 
+  console.log(user.cart);
+
   const products = user.cart;
+  
   const { id } = order;
+  console.log(id);
   const order_id = id;
   const total_ammount = amount;
 
-  const newOrder = new orderModel({
-    userID,
-    products,
-    order_id,
-    status: "pending",
-    total_ammount,
+
+  const arr = products.map((item) => {
+    const newOrder = new orderModel({
+      userID,
+      products: item.prodid._id,
+      order_id,
+      status: "pending",
+      total_ammount,
+    });
+
+    newOrder.save();
+    return newOrder;
   });
 
-  newOrder.save();
-
-  res
-    .status(201)
-    .send({
-      status: "success",
-      message: "payment success",
-      order: { userID, products, order_id, total_ammount },
-    });
+  res.status(201).send({
+    status: "success",
+    message: "payment success",
+    order: { userID, products, order_id, total_ammount },
+  });
 };
 
 // verify product
@@ -417,24 +390,22 @@ const cancellProduct = async (req, res) => {
 // order produc details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
-  const user = await userModel.findById(userID).populate("order");
-
-  // const filter = user.order.map(  item=>  item.products).map(async item=> await productModel.findById(item))
-
-  // console.log(filter);
+  const user = await userModel.findById(userID);
+  const order = await orderModel.find({userID: userID}).populate("products")
 
   if (user.order.length === 0) {
     return res.status(400).send({ message: "order not found" });
   }
-  res.status(200).send({ status: "success", data: user.order });
+  res.status(200).send({ status: "success", data: user.order, order: order });
 };
 
 module.exports = {
   userRegistration,
-  userLogin,
 
   getAllProducts,
   getProductById,
+  popularProducts,
+  popularProductsById,
 
   addToCart,
   viewCart,

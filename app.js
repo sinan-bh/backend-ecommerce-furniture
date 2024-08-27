@@ -6,6 +6,7 @@ const errHandler = require("./middlewares/errorHandling");
 const cookie = require("cookie-parser")
 const UserRoutes = require("./routes/UserRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const loginRoutes = require("./routes/loginRoutes");
 
 const app = express();
 
@@ -24,6 +25,7 @@ function dbConnection() {
   mongoose.connect(url).then(() => console.log("DataBase Connected"));
 }
 
+app.use("/login", loginRoutes);
 app.use("/users", UserRoutes);
 app.use("/admin", adminRoutes);
 
