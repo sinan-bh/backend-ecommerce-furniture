@@ -111,11 +111,19 @@ module.exports = {
     const productID = req.params.id;
     const { error, value } = productsValidationSchema.validate(req.body);
 
+    console.log(value);
+    console.log('err',error);
+    
+    
+
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    const { image,title, description, price, offerPrice, category, details, type } =
+    console.log('value',value);
+    
+
+    const { image,title, description, price, offerPrice, category, details, type, quantity } =
       value;
 
       console.log(image, title);
@@ -131,6 +139,7 @@ module.exports = {
         category: category,
         details: details,
         type: type,
+        quantity: quantity,
       }
     );
 

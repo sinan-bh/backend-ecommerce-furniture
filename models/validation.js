@@ -16,6 +16,7 @@ const productsValidationSchema = Joi.object({
   category: Joi.string(),
   details: Joi.string(),
   type: Joi.string(),
+  quantity: Joi.string(),
 })
 
 module.exports = {userValidationSchema, productsValidationSchema};

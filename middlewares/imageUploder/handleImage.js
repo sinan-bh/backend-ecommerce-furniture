@@ -7,6 +7,7 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + file.originalname)
     }
 })
+
 const upload =  multer({storage:storage})
 
 const cloudinary = require("cloudinary").v2
@@ -21,10 +22,10 @@ const imageUpload = (req, res, next) => {
         if(err) {
             return res.status(400).json({status:"faild",error:err.message})
         }
-        try{
+        try{            
             const result = await cloudinary.uploader.upload(req.file.path,{
                 folder:"Ecomers-imgs"
-            })
+            })            
             
             req.body.image = result.secure_url
 
