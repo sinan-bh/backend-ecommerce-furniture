@@ -110,18 +110,11 @@ module.exports = {
   updateProduct: async (req, res) => {
     const productID = req.params.id;
     const { error, value } = productsValidationSchema.validate(req.body);
-
-    console.log(value);
-    console.log('err',error);
-    
     
 
     if (error) {
       return res.status(400).json({ error: error.message });
-    }
-
-    console.log('value',value);
-    
+    }    
 
     const { image,title, description, price, offerPrice, category, details, type, quantity } =
       value;
@@ -149,7 +142,9 @@ module.exports = {
   // delete product
   deleteProduct: async (req, res) => {
     const productID = req.params.id;
-    const product = await productsModel.findByIdAndDelete({ _id: productID });
+    console.log(productID);
+    
+    const product = await productsModel.findByIdAndDelete({ _id: productID });    
 
     if (!product) {
       res.status(400).send({ message: "products not find" });
@@ -202,6 +197,16 @@ module.exports = {
       0
     );
 
+    const purchasedProductLivingroom = orders.filter((item)=> item.products.reduce((total,item)=>  item.category === 'livingroom' ? total + 1 : total ,0)).length
+    console.log('living',purchasedProductLivingroom);
+   
+    const purchasedProductDiningroom = orders.filter((item)=> item.products.reduce((total, item)=> item.category === 'diningroom' ? total + 1 : total ,0)).length
+    console.log('dinng',purchasedProductDiningroom);
+    
+    const purchasedProductBedroom = orders.filter((item)=> item.products.reduce((total, item)=> item.category === 'bedroom' ? total + 1 : total ,0)).length
+    console.log('bed',purchasedProductBedroom);
+    
+
     res
       .status(200)
       .send({
@@ -209,6 +214,34 @@ module.exports = {
         message: "order details",
         total_purchase: total_products,
         revanue: total_ammount,
+        livingPurchased: purchasedProductLivingroom,
+        diningPurchased: purchasedProductDiningroom,
+        bedPurchased: purchasedProductBedroom,
       });
   },
+
+  // Order Status Update
+  orderStatusUpdate: async (req,res) => {
+    const {order_id, status} = req.body
+    const order = await orderModel.findById(order_id)
+
+    console.log('id',order_id);
+    console.log('sts',status);
+    
+
+    if (!order) {
+      return res.status(400).res.send({ message: "orders not found" });
+    }
+
+    console.log(order);
+    
+    const updateStatus = await orderModel.updateOne(
+      {_id: order_id}, {$set: {status: status}}
+    )
+
+
+    res
+      .status(200)
+      .send({ status: "success", message: "status updated", data: updateStatus });
+  }
 };

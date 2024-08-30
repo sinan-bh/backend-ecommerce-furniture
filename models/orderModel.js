@@ -1,4 +1,5 @@
 const { default: mongoose } = require("mongoose");
+const { payment } = require("../controllers/UserController");
 
 const orderSchema = new mongoose.Schema({
   userID: String,
@@ -8,6 +9,7 @@ const orderSchema = new mongoose.Schema({
   payment_id: String,
   total_ammount: Number,
   status: String,
+  payment: {type: String, default: 'pending'},
 });
 
 module.exports = mongoose.model("order", orderSchema);

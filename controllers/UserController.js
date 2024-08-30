@@ -312,18 +312,15 @@ const payment = async (req, res) => {
     currency: "INR",
     receipt: `receipt_${Math.floor(Math.random() * 10000)}`,
   };
-
-  console.log(option);
+  
 
   const order = await razorpay.orders.create(option);
 
-  console.log("hhh", order);
 
   if (!order) {
     return res.status(400).send({ message: "some thing wrong" });
   }
 
-  console.log(user.cart);
 
   const products = user.cart;
   
@@ -367,7 +364,7 @@ const verify_payment = async (req, res) => {
 
     await orderModel.updateOne(
       { order_id: order_id },
-      { $set: { status: "completed" } }
+      { $set: { payment: "completed" } }
     );
 
     await userModel.updateOne(

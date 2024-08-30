@@ -21,6 +21,7 @@ routes
     .get("/orders",tryCatchErrorHandler(controller.getAllOrders))
     .get("/orders/details",tryCatchErrorHandler(controller.orderDetails))
     .get("/orders/:id",tryCatchErrorHandler(controller.getOrdersById))
+    .put("/order",tryCatchErrorHandler(controller.orderStatusUpdate))
     
 
 module.exports = routes
