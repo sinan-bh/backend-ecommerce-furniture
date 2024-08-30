@@ -9,7 +9,7 @@ const routes = express()
 routes
     .post("/login",tryCatchErrorHandler(controller.adminLogin))
 
-    // routes.use(isAdmin)
+    routes.use(isAdmin)
 
     .get("/allusers",tryCatchErrorHandler(controller.getAllUsers))
     .get("/user/:id",tryCatchErrorHandler(controller.getUserByID))

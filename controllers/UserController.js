@@ -305,10 +305,10 @@ const payment = async (req, res) => {
     .findById(userID)
     .populate({ path: "cart.prodid" });
 
-  const amount = totalPrice * 100;
+  const amount = totalPrice;
 
   const option = {
-    amount: amount,
+    amount: amount * 100,
     currency: "INR",
     receipt: `receipt_${Math.floor(Math.random() * 10000)}`,
   };

@@ -85,7 +85,7 @@ module.exports = {
       return res.status(400).json({status:"faild", error: error });
     }
 
-    const { image,title, description, price, offerPrice, category, details, type } =
+    const { image,title, description, price, offerPrice, category, details, type, quantity } =
       value;
       
     const newProducts = await productsModel.create({
@@ -97,6 +97,7 @@ module.exports = {
       category,
       details,
       type,
+      quantity,
     });
 
     res.status(201).json({
@@ -115,25 +116,10 @@ module.exports = {
     if (error) {
       return res.status(400).json({ error: error.message });
     }    
-
-    const { image,title, description, price, offerPrice, category, details, type, quantity } =
-      value;
-
-      console.log(image, title);
       
     const updateProduct = await productsModel.findByIdAndUpdate(
       { _id: productID },
-      {
-        image:image,
-        title: title,
-        description: description,
-        price: price,
-        offerPrice: offerPrice,
-        category: category,
-        details: details,
-        type: type,
-        quantity: quantity,
-      }
+      {$set: value }
     );
 
     res.status(200).send({ status: "success", data: value });
