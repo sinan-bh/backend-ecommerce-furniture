@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   name: String,
   email: String,
-  uname: String,
+  userName: String,
   password: String,
   type: { type: String, default: "user" },
   date: { type: String, default: new Date().toLocaleDateString() },

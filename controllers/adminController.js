@@ -8,8 +8,7 @@ const { productsValidationSchema } = require("../models/validation");
 module.exports = {
   // All users
   getAllUsers: async (req, res) => {
-    const users = await UserModel.find();
-    console.log(users);
+    const users = await UserModel.find().sort( { _id: -1 } );
 
     if (!users) {
       return res.status(400).res.send({ message: "users not found" });
@@ -38,7 +37,7 @@ module.exports = {
 
     if (!category) {
       
-      const products = await productsModel.find();
+      const products = await productsModel.find().sort({ _id : -1 });      
     
       if (!products) {
         return res.status(400).send({ message: "Products Not Found" });
@@ -47,7 +46,7 @@ module.exports = {
       res.status(200).send(products);
     }else{
       const findCategory = await productsModel.aggregate([
-        {$match: {category: category}}
+        {$match: {category: category},  $sort: { _id : -1 } }
       ]);
     
       if (!findCategory || findCategory.length === 0) {
@@ -76,10 +75,8 @@ module.exports = {
   },
 
   // create products
-  createProducts: async (req, res) => {
-    console.log(req.body);
-    
-    const { error, value } = productsValidationSchema.validate(req.body);    
+  createProducts: async (req, res) => {    
+    const { error, value } = productsValidationSchema.validate(req.body);        
 
     if (error) {
       return res.status(400).json({status:"faild", error: error });
@@ -128,7 +125,6 @@ module.exports = {
   // delete product
   deleteProduct: async (req, res) => {
     const productID = req.params.id;
-    console.log(productID);
     
     const product = await productsModel.findByIdAndDelete({ _id: productID });    
 
@@ -143,7 +139,7 @@ module.exports = {
 
   //Order Details
   getAllOrders: async (req, res) => {
-    const orders = await orderModel.find().populate("products" );
+    const orders = await orderModel.find().populate("products" ).sort({ _id: -1} );
 
     if (!orders) {
       return res.status(400).res.send({ message: "orders not found" });
@@ -184,13 +180,10 @@ module.exports = {
     );
 
     const purchasedProductLivingroom = orders.filter((item)=> item.products.reduce((total,item)=>  item.category === 'livingroom' ? total + 1 : total ,0)).length
-    console.log('living',purchasedProductLivingroom);
    
     const purchasedProductDiningroom = orders.filter((item)=> item.products.reduce((total, item)=> item.category === 'diningroom' ? total + 1 : total ,0)).length
-    console.log('dinng',purchasedProductDiningroom);
     
     const purchasedProductBedroom = orders.filter((item)=> item.products.reduce((total, item)=> item.category === 'bedroom' ? total + 1 : total ,0)).length
-    console.log('bed',purchasedProductBedroom);
     
 
     res
@@ -211,20 +204,13 @@ module.exports = {
     const {order_id, status} = req.body
     const order = await orderModel.findById(order_id)
 
-    console.log('id',order_id);
-    console.log('sts',status);
-    
-
     if (!order) {
       return res.status(400).res.send({ message: "orders not found" });
     }
-
-    console.log(order);
-    
+ 
     const updateStatus = await orderModel.updateOne(
       {_id: order_id}, {$set: {status: status}}
     )
-
 
     res
       .status(200)

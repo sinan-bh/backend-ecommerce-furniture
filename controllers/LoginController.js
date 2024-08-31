@@ -23,11 +23,11 @@ const loginPage = async (req, res) => {
   
     console.log("login", value);
   
-    const { uname, pass } = value;
+    const { userName, pass } = value;
 
-    if (uname === ADMIN_KEY && pass === ADMIN_SECRET_KEY) {
+    if (userName === ADMIN_KEY && pass === ADMIN_SECRET_KEY) {
 
-      const token = jwt.sign({ usename: uname }, SECRET_KEY, {
+      const token = jwt.sign({ usename: userName }, SECRET_KEY, {
         expiresIn: 86400,
       });
 
@@ -42,14 +42,12 @@ const loginPage = async (req, res) => {
         status: "success",
         message: "admin Logged",
         token: token,
-        data: uname,
+        data: userName,
       });
     }
 
-    const user = await userModel.findOne({ uname: uname });
-  
-    console.log("user", user);
-  
+    const user = await userModel.findOne({ userName: userName });
+    
     if (!user) {
       return res
         .status(400)
@@ -63,16 +61,14 @@ const loginPage = async (req, res) => {
     }
   
     const isPasswrodMatch = await bcrypt.compare(pass, user.password);
-  
-    console.log("passss", isPasswrodMatch);
-  
+    
     if (!isPasswrodMatch) {
       return res
         .status(400)
         .send({ message: "invalid password", isPasswrodMatch });
     }
   
-    const token = jwt.sign({ username: user.uname }, SECRET_KEY, {
+    const token = jwt.sign({ username: user.userName }, SECRET_KEY, {
       expiresIn: 3600,
     });
   
@@ -85,9 +81,9 @@ const loginPage = async (req, res) => {
   
     res.status(200).send({
       status: "success",
-      message: `Welcome To ${user.uname}`,
+      message: `Welcome To ${user.userName}`,
       token: token,
-      uname,
+      userName,
       user,
       isPasswrodMatch,
     });

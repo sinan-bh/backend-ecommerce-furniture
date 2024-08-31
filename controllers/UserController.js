@@ -33,11 +33,11 @@ const userRegistration = async (req, res) => {
 
   console.log("registration", value);
 
-  const { name, email, uname, pass } = value;
+  const { name, email, userName, pass } = value;
   const password = await bcrypt.hash(pass, 10);
-  const newUser = new userModel({ name, email, uname, password });
+  const newUser = new userModel({ name, email, userName, password });
   const user = await userModel.find();
-  const username = user.find((item) => item.uname === uname);
+  const username = user.find((item) => item.userName === userName);
 
   console.log("username", username);
 
@@ -160,7 +160,8 @@ const viewCart = async (req, res) => {
   const userID = req.params.id;
   const cartItem = await userModel
     .findById(userID)
-    .populate({ path: "cart.prodid" });
+    .populate({ path: "cart.prodid" })
+    .sort( {_id: -1 })
 
   if (!cartItem) {
     return res
@@ -262,7 +263,7 @@ const showWishList = async (req, res) => {
     return res.status(400).send({ message: "User Not Found" });
   }
 
-  const whishList = await userModel.findById(userID).populate("wishlist");
+  const whishList = await userModel.findById(userID).populate("wishlist").sort( { _id: -1} );
 
   if (!whishList) {
     return res.status(400).send({ message: "WhisList is Empty" });
@@ -388,7 +389,7 @@ const cancellProduct = async (req, res) => {
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
   const user = await userModel.findById(userID);
-  const order = await orderModel.find({userID: userID}).populate("products")
+  const order = await orderModel.find({userID: userID}).populate("products").sort({ _id: -1})
 
   if (user.order.length === 0) {
     return res.status(400).send({ message: "order not found" });
