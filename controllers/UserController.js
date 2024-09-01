@@ -385,16 +385,18 @@ const cancellProduct = async (req, res) => {
   res.status(200).send({ status: "success", message: "order cancelled" });
 };
 
-// order produc details
+// order product details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
-  const user = await userModel.findById(userID);
   const order = await orderModel.find({userID: userID}).populate("products").sort({ _id: -1})
 
-  if (user.order.length === 0) {
+  console.log(order);
+  
+
+  if (order.length === 0) {
     return res.status(400).send({ message: "order not found" });
   }
-  res.status(200).send({ status: "success", data: user.order, order: order });
+  res.status(200).send({ status: "success", order: order });
 };
 
 module.exports = {

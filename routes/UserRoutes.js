@@ -5,14 +5,13 @@ const isUserLogin = require("../middlewares/userAuthintication");
 const tryCatchMiddleware = require('../middlewares/tryCatchErrorHandler')
 
 router.route("/registration").post(tryCatchMiddleware(controller.userRegistration));
-// router.route("/login").post(tryCatchMiddleware(controller.userLogin));
 
 router.route("/products").get(tryCatchMiddleware(controller.getAllProducts));
 router.route("/products/:id").get(tryCatchMiddleware(controller.getProductById));
 router.route("/popularproducts").get(tryCatchMiddleware(controller.popularProducts));
 router.route("/popularproducts/:id").get(tryCatchMiddleware(controller.popularProductsById));
 
-router.use(isUserLogin);
+// router.use(isUserLogin);
 
 router.route("/cart/:id").post(isUserLogin,tryCatchMiddleware(controller.addToCart));
 router.route("/cart/:id").get(tryCatchMiddleware(controller.viewCart));
