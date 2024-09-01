@@ -370,7 +370,7 @@ const verify_payment = async (req, res) => {
 
     await userModel.updateOne(
       { _id: id },
-      { $push: { order: order }, $set: { cart: [] } },
+      { $set: { cart: [] } },
       { new: true }
     );
 
