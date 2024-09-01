@@ -34,7 +34,7 @@ const loginPage = async (req, res) => {
       res.cookie('token', token, {
         httpOnly: true, 
         secure: true, 
-        sameSite: 'Strict', 
+        sameSite: 'none', 
         maxAge: 3600000, 
       });
 
@@ -75,7 +75,7 @@ const loginPage = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true, 
       secure: true, 
-      sameSite: 'Strict', 
+      sameSite: 'none', 
       maxAge: 3600000, 
     });
   

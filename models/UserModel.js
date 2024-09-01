@@ -15,12 +15,7 @@ const userSchema = new mongoose.Schema({
   ],
   order: [
     {
-      product: [{ type: mongoose.Schema.ObjectId, ref: "product" }],
-      status: { type: String, default: "pending" },
-      date: { type: String, default: new Date().toLocaleDateString() },
-      order_id: String,
-      payment_id: String,
-      total_ammount: Number,
+       type: mongoose.Schema.ObjectId, ref: "order" ,
     },
   ],
   wishlist: [{ type: mongoose.Schema.ObjectId, ref: "product" }],
