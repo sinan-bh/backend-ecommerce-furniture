@@ -11,7 +11,7 @@ router.route("/products/:id").get(tryCatchMiddleware(controller.getProductById))
 router.route("/popularproducts").get(tryCatchMiddleware(controller.popularProducts));
 router.route("/popularproducts/:id").get(tryCatchMiddleware(controller.popularProductsById));
 
-// router.use(isUserLogin);
+router.use(isUserLogin);
 
 router.route("/cart/:id").post(isUserLogin,tryCatchMiddleware(controller.addToCart));
 router.route("/cart/:id").get(tryCatchMiddleware(controller.viewCart));
