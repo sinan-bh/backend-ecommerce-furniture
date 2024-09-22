@@ -21,14 +21,26 @@ module.exports = {
 
   //Get Specific User
   getUserByID: async (req, res) => {
-    const userID = req.params.id;
+    const userID = req.params.id; 
+    console.log(userID);
+     
     const user = await UserModel.findById(userID);
-    if (!user) {
-      return res.status(400).send({ message: "user not found" });
+    const order = await orderModel.find().populate("userID").populate("products.prodid").sort({_id: -1})
+    console.log(order);
+    
+    
+    if (!user && order) {
+      return res.status(400).send({ message: "user or order not found" });
     }
+
+    const userOrders = order.filter(item=> item.userID._id == userID) 
+
+    console.log(userOrders);
+    
+
     res
       .status(200)
-      .send({ status: "success", message: "user found", data: user });
+      .send({ status: "success", message: "user found", data: user, order: userOrders });
   },
 
   //View All Products
@@ -139,7 +151,7 @@ module.exports = {
 
   //Order Details
   getAllOrders: async (req, res) => {
-    const orders = await orderModel.find().populate("products.prodid" ).sort({ _id: -1} );
+    const orders = await orderModel.find().populate("products.prodid" ).populate("userID").sort({ _id: -1} );
 
     if (!orders) {
       return res.status(400).res.send({ message: "orders not found" });

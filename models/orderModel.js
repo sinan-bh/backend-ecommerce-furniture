@@ -2,7 +2,7 @@ const { default: mongoose } = require("mongoose");
 const { payment } = require("../controllers/UserController");
 
 const orderSchema = new mongoose.Schema({
-  userID: String,
+  userID: { type: mongoose.Schema.ObjectId, ref: "users"},
   products: [
     {
       prodid: { type: mongoose.Schema.ObjectId, ref: "product" },
