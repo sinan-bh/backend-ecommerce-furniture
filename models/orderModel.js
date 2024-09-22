@@ -3,7 +3,13 @@ const { payment } = require("../controllers/UserController");
 
 const orderSchema = new mongoose.Schema({
   userID: String,
-  products: [{ type: mongoose.Types.ObjectId, ref: "product" }],
+  products: [
+    {
+      prodid: { type: mongoose.Schema.ObjectId, ref: "product" },
+      quantity: { type: Number, default: 1 },
+      productPrize: { type: Number}
+    },
+  ],
   date: { type: String, default: new Date().toLocaleDateString() },
   order_id: String,
   payment_id: String,

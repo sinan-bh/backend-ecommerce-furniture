@@ -6,6 +6,9 @@ const tryCatchMiddleware = require('../middlewares/tryCatchErrorHandler')
 
 router.route("/registration").post(tryCatchMiddleware(controller.userRegistration));
 
+router.route("/profile/:userID").get(tryCatchMiddleware(controller.viewProfile));
+router.route("/profile/:userID").put(tryCatchMiddleware(controller.updateUserProfile));
+
 router.route("/products").get(tryCatchMiddleware(controller.getAllProducts));
 router.route("/products/:id").get(tryCatchMiddleware(controller.getProductById));
 router.route("/popularproducts").get(tryCatchMiddleware(controller.popularProducts));

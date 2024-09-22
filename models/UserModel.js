@@ -7,10 +7,13 @@ const userSchema = new mongoose.Schema({
   password: String,
   type: { type: String, default: "user" },
   date: { type: String, default: new Date().toLocaleDateString() },
+  phone: {type: String},
+  address: {type: String},
   cart: [
     {
       prodid: { type: mongoose.Schema.ObjectId, ref: "product" },
       quantity: { type: Number, default: 1 },
+      productPrize: { type: Number}
     },
   ],
   order: [

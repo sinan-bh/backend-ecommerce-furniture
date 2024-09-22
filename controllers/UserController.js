@@ -49,6 +49,35 @@ const userRegistration = async (req, res) => {
   res.status(201).send(newUser);
 };
 
+// User Profile
+
+const viewProfile = async (req,res) => {
+  const { userID } = req.params
+  console.log(req.params);
+    
+  const userData = await userModel.findById(userID)
+
+  if (!userData) {
+    return res.status(400).send({ message: "User Not Found" });
+  }
+
+  res.status(200).send(userData)
+}
+
+const updateUserProfile = async (req,res) => {
+  const { userID } = req.params;
+  const updateProfile = req.body
+  const userData = await userModel.findById(userID)
+
+  if (!userData) {
+    return res.status(400).send({ message: "User Not Found" });
+  }
+
+  await userModel.updateOne(
+    {_id: userID}, {$set: updateProfile}
+  )
+}
+
 // get products
 const getAllProducts = async (req, res) => {
   const { category } = req.query;
@@ -141,11 +170,14 @@ const addToCart = async (req, res) => {
       .send({ status: "failure", message: "Product is Already Added" });
   }
 
+  const productPrize = await productModel.findById(productID)
+
   await userModel.updateOne(
     { _id: userID },
-    { $addToSet: { cart: { prodid: productID } } }
+    { $addToSet: { cart: { prodid: productID, productPrize: productPrize.offerPrice } } }
   );
-
+  
+  
   const cartLength = user.cart.length;
 
   res.send({
@@ -190,11 +222,17 @@ const addCartQuantity = async (req, res) => {
       .send({ status: "failure", message: "Cart items not found" });
   }
 
+  const product = await productModel.findById(prodid)
+  
+
   cartItem.quantity += quantityChange;
+  cartItem.productPrize = (product.offerPrice * cartItem.quantity).toFixed(2);
 
   if (cartItem.quantity > 0) {
     user.save();
   }
+
+ 
 
   res
     .status(200)
@@ -326,27 +364,31 @@ const payment = async (req, res) => {
   const products = user.cart;
   
   const { id } = order;
-  console.log(id);
   const order_id = id;
   const total_ammount = amount;
 
 
-  const arr = products.map((item) => {
     const newOrder = new orderModel({
       userID,
-      products: item.prodid._id,
+      products: products,
       order_id,
       status: "pending",
       total_ammount,
     });
 
     newOrder.save();
-    return newOrder;
-  });
+
+    const updated = await userModel.updateOne(
+      { _id: userID },
+      { $set: { cart: [] } }
+    );
+
+    console.log(updated);
 
   res.status(201).send({
     status: "success",
     message: "payment success",
+    updated: updated,
     order: { userID, products, order_id, total_ammount },
   });
 };
@@ -368,11 +410,7 @@ const verify_payment = async (req, res) => {
       { $set: { payment: "completed" } }
     );
 
-    await userModel.updateOne(
-      { _id: id },
-      { $set: { cart: [] } },
-      { new: true }
-    );
+      
 
     res.send("Payment verified successfully");
   } else {
@@ -388,7 +426,7 @@ const cancellProduct = async (req, res) => {
 // order product details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
-  const order = await orderModel.find({userID: userID}).populate("products").sort({ _id: -1})
+  const order = await orderModel.find({userID: userID}).populate("products.prodid").sort({ _id: -1})
 
   console.log(order);
   
@@ -401,6 +439,9 @@ const orederProducts = async (req, res) => {
 
 module.exports = {
   userRegistration,
+
+  viewProfile,
+  updateUserProfile,
 
   getAllProducts,
   getProductById,

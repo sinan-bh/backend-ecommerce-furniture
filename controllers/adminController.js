@@ -139,7 +139,7 @@ module.exports = {
 
   //Order Details
   getAllOrders: async (req, res) => {
-    const orders = await orderModel.find().populate("products" ).sort({ _id: -1} );
+    const orders = await orderModel.find().populate("products.prodid" ).sort({ _id: -1} );
 
     if (!orders) {
       return res.status(400).res.send({ message: "orders not found" });
@@ -168,7 +168,7 @@ module.exports = {
 
   // total purchase and total revanue
   orderDetails: async (req, res) => {
-    const orders = await orderModel.find().populate({ path: "products" });
+    const orders = await orderModel.find().populate({ path: "products.prodid" });
 
     if (!orders) {
       return res.status(400).res.send({ message: "orders not found" });
