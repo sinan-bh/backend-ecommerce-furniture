@@ -397,7 +397,6 @@ const verify_payment = async (req, res) => {
 
   const { order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-  console.log(order_id);
   
   const generatedSignature = crypto
     .createHmac("sha256", RAZORPAY_SECRET_KEY)
@@ -411,13 +410,18 @@ const verify_payment = async (req, res) => {
   console.log('kiti');
   
   user.cart = []
+  
+  user.save()
+
+  console.log('kiiiii');
+  
 
     await orderModel.updateOne(
       { order_id: order_id },
       { $set: { payment: "completed" } }
     );
 
-    res.send("Payment verified successfully");
+    res.send({status: "Payment verified successfully", res: user.cart});
 };
 
 // cancell order
