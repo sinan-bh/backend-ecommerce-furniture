@@ -154,8 +154,6 @@ const addToCart = async (req, res) => {
   const productID = req.body.id;
   const user = await userModel.findById(userID);
 
-  console.log("user", user);
-
   if (!user) {
     return res.status(400).send({ error: "Invalid User" });
   }
@@ -378,44 +376,48 @@ const payment = async (req, res) => {
 
     newOrder.save();
 
-    const updated = await userModel.updateOne(
-      { _id: userID },
-      { $set: { cart: [] } }
-    );
-
-    console.log(updated);
-
   res.status(201).send({
     status: "success",
     message: "payment success",
-    updated: updated,
     order: { userID, products, order_id, total_ammount },
   });
 };
 
 // verify product
 const verify_payment = async (req, res) => {
+
+  console.log('kittunnilla');
+  
   const id = req.params.id;
+  const user = await userModel.findById(id)
+
+  if (!user) {
+    return res.status(400).send({ message: "user not found" });
+  }
+
   const { order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+  console.log(order_id);
+  
   const generatedSignature = crypto
     .createHmac("sha256", RAZORPAY_SECRET_KEY)
     .update(`${order_id}|${razorpay_payment_id}`)
     .digest("hex");
 
-  if (generatedSignature === razorpay_signature) {
-    const order = await orderModel.findOne({ order_id: order_id });
+  if (generatedSignature !== razorpay_signature) {
+    return res.status(400).send("Payment verification failed");
+  }
+
+  console.log('kiti');
+  
+  user.cart = []
 
     await orderModel.updateOne(
       { order_id: order_id },
       { $set: { payment: "completed" } }
     );
 
-      
-
     res.send("Payment verified successfully");
-  } else {
-    res.status(400).send("Payment verification failed");
-  }
 };
 
 // cancell order
@@ -426,10 +428,7 @@ const cancellProduct = async (req, res) => {
 // order product details
 const orederProducts = async (req, res) => {
   const userID = req.params.id;
-  const order = await orderModel.find({userID: userID}).populate("products.prodid").sort({ _id: -1})
-
-  console.log(order);
-  
+  const order = await orderModel.find({userID: userID}).populate("products.prodid").sort({ _id: -1})  
 
   if (order.length === 0) {
     return res.status(400).send({ message: "order not found" });

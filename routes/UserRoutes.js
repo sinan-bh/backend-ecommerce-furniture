@@ -26,7 +26,7 @@ router.route("/wishlist/:id").get(tryCatchMiddleware(controller.showWishList))
 router.route("/wishlist/:id/:itemId").delete(tryCatchMiddleware(controller.removeFromWishList))
 
 router.route("/payment/:id").post(isUserLogin,tryCatchMiddleware(controller.payment))
-router.route("/verify_payment/:id").post(tryCatchMiddleware(controller.verify_payment))
+router.route("/verify_payment/:id").put(tryCatchMiddleware(controller.verify_payment))
 router.route("/cancell_payment/:id").post(tryCatchMiddleware(controller.cancellProduct))
 router.route("/order/:id").get(tryCatchMiddleware(controller.orederProducts))
 

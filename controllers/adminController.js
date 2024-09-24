@@ -180,7 +180,7 @@ module.exports = {
 
   // total purchase and total revanue
   orderDetails: async (req, res) => {
-    const orders = await orderModel.find().populate({ path: "products.prodid" });
+    const orders = await orderModel.find().populate( "products.prodid");
 
     if (!orders) {
       return res.status(400).res.send({ message: "orders not found" });
@@ -191,11 +191,11 @@ module.exports = {
       0
     );
 
-    const purchasedProductLivingroom = orders.filter((item)=> item.products.reduce((total,item)=>  item.category === 'livingroom' ? total + 1 : total ,0)).length
+    const purchasedProductLivingroom = orders.filter((item)=> item.products.reduce((total,item)=>  item.prodid.category === 'livingroom' ? total + 1 : total ,0)).length
    
-    const purchasedProductDiningroom = orders.filter((item)=> item.products.reduce((total, item)=> item.category === 'diningroom' ? total + 1 : total ,0)).length
+    const purchasedProductDiningroom = orders.filter((item)=> item.products.reduce((total, item)=> item.prodid.category === 'diningroom' ? total + 1 : total ,0)).length
     
-    const purchasedProductBedroom = orders.filter((item)=> item.products.reduce((total, item)=> item.category === 'bedroom' ? total + 1 : total ,0)).length
+    const purchasedProductBedroom = orders.filter((item)=> item.products.reduce((total, item)=> item.prodid.category === 'bedroom' ? total + 1 : total ,0)).length
     
 
     res
