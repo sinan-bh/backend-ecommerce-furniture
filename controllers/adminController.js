@@ -226,6 +226,6 @@ module.exports = {
 
     res
       .status(200)
-      .send({ status: "success", message: "status updated", data: updateStatus });
+      .send({ status: "success", message: "status updated", data: {order_id, status} });
   }
 };

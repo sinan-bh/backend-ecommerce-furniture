@@ -11,8 +11,8 @@ const loginRoutes = require("./routes/loginRoutes");
 const app = express();
 
 app.use(cors({
-  origin: 'https://furnicture-e-commerce.vercel.app',
-  // origin: 'http://localhost:3001',
+  // origin: 'https://furnicture-e-commerce.vercel.app',
+  origin: 'http://localhost:3001',
   credentials: true,
 }))
 app.use(express.json());
