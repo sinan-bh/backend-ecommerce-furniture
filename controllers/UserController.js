@@ -228,13 +228,11 @@ const addCartQuantity = async (req, res) => {
 
   if (cartItem.quantity > 0) {
     user.save();
-  }
-
- 
+  }  
 
   res
     .status(200)
-    .send({ status: "success", message: "cartItem Updated", data: user.cart });
+    .send({ status: "success", message: "cartItem Updated", quantity: cartItem.quantity, id: cartItem._id });
 };
 
 // remove Products
@@ -341,18 +339,17 @@ const payment = async (req, res) => {
   const user = await userModel
     .findById(userID)
     .populate({ path: "cart.prodid" });
-
+    
   const amount = totalPrice;
 
   const option = {
-    amount: amount * 100,
+    amount: amount,
     currency: "INR",
     receipt: `receipt_${Math.floor(Math.random() * 10000)}`,
   };
   
 
   const order = await razorpay.orders.create(option);
-
 
   if (!order) {
     return res.status(400).send({ message: "some thing wrong" });
@@ -405,16 +402,10 @@ const verify_payment = async (req, res) => {
 
   if (generatedSignature !== razorpay_signature) {
     return res.status(400).send("Payment verification failed");
-  }
-
-  console.log('kiti');
-  
+  }  
   user.cart = []
   
-  user.save()
-
-  console.log('kiiiii');
-  
+  user.save()  
 
     await orderModel.updateOne(
       { order_id: order_id },
