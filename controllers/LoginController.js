@@ -18,7 +18,7 @@ const loginPage = async (req, res) => {
     if (error) {
       return res
         .status(400)
-        .send({ status: "failure", message: "login details incorrect" });
+        .send({ status: "error", message: "login details incorrect" });
     }
   
     console.log("login", value);
@@ -51,13 +51,13 @@ const loginPage = async (req, res) => {
     if (!user) {
       return res
         .status(400)
-        .send({ status: "failure", message: "user not found" });
+        .send({ status: "error", message: "Invalid User Name or Password" });
     }
   
     if (!pass || !user.password) {
       return res
         .status(400)
-        .json({ status: "error", message: "Invalid password" });
+        .json({ status: "error", message: "Invalid User Name or Password" });
     }
   
     const isPasswrodMatch = await bcrypt.compare(pass, user.password);
@@ -65,7 +65,7 @@ const loginPage = async (req, res) => {
     if (!isPasswrodMatch) {
       return res
         .status(400)
-        .send({ message: "invalid password", isPasswrodMatch });
+        .send({ status: "error", message: "Invalid User Name or Password", isPasswrodMatch });
     }
   
     const token = jwt.sign({ username: user.userName }, SECRET_KEY, {
